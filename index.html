@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>カード一覧</title>
+  <style>
+  /* =============================
+     ▼ 画面全体のスタイル設定 ▼
+     ============================= */
+
+body {
+    font-family: sans-serif; /* ページ全体のフォントを指定 */
+    padding: 10px;            /* ページ全体の余白 */
+    background: #fff;         /* ページの背景色（ここを変えると背景色が変わります） */
+  }
+    /* 注意書き（※〜）のデザイン */
+  .notice {
+    font-size: 12px;          /* 文字サイズを変えたい場合はここを編集 */
+    color: #555;              /* 文字色を変更したい場合はここを編集 */
+    margin-bottom: 10px;      /* 注意書きと次の要素の間隔 */
+  }
+  /* ------------------------------
+     検索バー・ボタンの親枠
+     ------------------------------ */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;                /* 要素間のスペース */
+    margin-bottom: 15px;     /* 下部の余白 */
+  }
+
+    /* 検索バーの枠 */
+    .search-wrapper {
+      display: flex;
+      width: 100%;
+    }
+
+    /* 検索入力欄のスタイル */
+    #searchInput {
+       flex: 1;                 /* 幅を親に合わせて伸ばす */
+    padding: 8px;            /* 内側の余白 */
+    font-size: 14px;         /* 文字サイズ */
+  }
+
+ /* ------------------------------
+     リセット・ソートボタンの枠
+     ------------------------------ */
+  .buttons-wrapper {
+    display: flex;
+    gap: 8px;                /* ボタン間のスペース */
+    width: 100%;
+  }
+
+  /* リセットボタンの色・サイズ変更 */
+  #resetButton {
+    background-color: #666;  /* ボタンの背景色（ここを変えると色が変わる） */
+    color: white;            /* 文字色 */
+    border: none;
+    padding: 8px;            /* ボタンの内側余白 */
+    border-radius: 4px;      /* 角丸の大きさ */
+    cursor: pointer;         /* ホバー時のカーソル形状 */
+  }
+
+ /* ボタンやセレクトボックスの基本スタイル */
+  .buttons-wrapper button,
+  .buttons-wrapper select {
+    flex: 1;                 /* 幅を均等に */
+    padding: 8px;            /* 内側余白 */
+    font-size: 14px;         /* 文字サイズ */
+    box-sizing: border-box;  /* パディング込みでサイズ指定 */
+  }
+
+   /* ------------------------------
+     カード一覧をグリッド表示
+     ------------------------------ */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 画面幅に応じて列数が変わります */
+    gap: 8px;               /* カード間のスペース */
+  }
+
+    /* 横幅480px以上での4列数変更（スマホ向け） */
+    @media (min-width: 480px) {
+      .card-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* 横幅768px以上で8列に変更（PC・タブレット） */
+    @media (min-width: 768px) {
+      .card-grid { grid-template-columns: repeat(8, 1fr); }
+    }
+
+      /* ------------------------------
+     個別カードのデザイン
+     ------------------------------ */
+  .card {
+    border: 1px solid #ccc;      /* 枠線の色 */
+    border-radius: 6px;          /* 角丸 */
+    padding: 4px;                /* 内側余白 */
+    text-align: center;          /* 文字の中央寄せ */
+    background-color: #f9f9f9;  /* カードの背景色 */
+    font-size: 12px;             /* カード内全体の文字サイズ */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 210px;           /* カードの高さを揃えたい場合に調整 */
+  }
+
+/* カード画像のサイズ調整 */
+  .card img {
+    width: 100%;                /* 横幅いっぱいに */
+    height: auto;
+    max-height: 120px;          /* 高さの最大値 */
+    object-fit: contain;        /* 画像の縮小方法 */
+    margin-bottom: 6px;         /* 下余白 */
+  }
+
+    /* カード名（クリックできる文字）の見た目 */
+  .card-name {
+    font-weight: bold;          /* 太字 */
+    margin: 2px 0;
+    font-size: 9px;             /* 小さめの文字サイズ */
+    white-space: normal;        /* 改行可能 */
+    cursor: pointer;            /* マウスカーソルをポインタに */
+  }
+
+ /* 募集枚数・注意書きのレイアウト */
+  .card-texts {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-grow: 1;
+  }
+
+ /* 募集枚数の文字サイズ・色 */
+  .card-quantity {
+    font-size: 12px;            /* ここを変えると募集枚数のサイズ変更 */
+    color: #333;                /* 文字色 */
+    margin: 2px 0;
+  }
+
+    /* 注意書き（募集枚数0の補足）のスタイル */
+  .card-note {
+    font-size: 9px;             /* 文字サイズ */
+    color: #666;                /* 色を薄く */
+    margin-bottom: 6px;
+  }
+
+   /* 価格表示のスタイル */
+  .card-price {
+    color: red;                 /* 文字色（赤） */
+    font-weight: bold;
+    font-size: 14px;            /* 価格の文字← PC表示時の価格フォントサイズ */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: auto;           /* カード内で下に固定 */
+  }
+
+ /* スマホ画面用に価格や募集枚数を小さく調整 */
+  @media (max-width: 479px) {
+    .card-price { font-size: 8px; }
+    .card-quantity { font-size: 8px; }
+  }
+    /* もっと見るボタンの大きさなど */
+ #loadMoreButton {
+    margin-top: 30px;
+    width: 100%;                 /* 幅いっぱい */
+    padding: 12px;               /* 内側余白 */
+    font-size: 15px;             /* 文字サイズ */
+    border: none;
+    background-color: #f88379;   /* ボタンの色はここを変更 */
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+/* グレイアウト（募集0枚など無効状態のカード用） */
+  .gray-out {
+    opacity: 0.9;                /* 薄くする */
+    filter: grayscale(100%);    /* モノクロにする */
+    pointer-events: none;       /* クリックできなくする */
+  }
+  </style>
+</head>
+<body>
+
+  <!-- 上部の注意書き（自由に書き換えてください） -->
+<div class="notice">
+※データ容量の都合上、読み込みに時間がかかる場合がございます。<br>
+※価格や募集枚数の更新にラグがある場合がございます。<br>
+※相場の変動や在庫状況によって、予告なく、募集枚数や価格に変動がある場合がございます。<br>
+募集枚数が0枚の場合でも購入できる場合があります!!<br>
+是非、お気軽にスタッフにお尋ねください!!
+</div>
+  <!-- 検索・リセット・ソート機能 -->
+<div class="controls">
+  <div class="search-wrapper">
+
+
+    <!-- 検索入力欄
+  placeholder属性は、入力欄が空の時に薄く表示されるヒントテキストです。
+  ここを編集すると検索ボックス内の説明文が変わります。 -->
+<input type="text" id="searchInput" placeholder="カード名や型番、収録パックで検索" />
+
+
+  </div>
+  <div class="buttons-wrapper">
+    <button id="resetButton">リセット</button>
+    <select id="sortSelect">
+      <option value="price">価格（高い順）</option>
+      <option value="priceLow">価格（安い順）</option>
+      <option value="name">名前（A→Z）</option>
+    </select>
+  </div>
+</div>
+<!-- カード表示ブロック -->
+<div class="card-grid" id="cardList"></div>
+<button id="loadMoreButton">もっと見る</button>
+
+
+<!-- CSV読み込み用ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+
+<script>
+  // ▼ CSVデータのURL（ここを変えると読み込むカードデータを変更可能）
+  const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTR4oTyD_13hkFXRRBjsPX9J5KKiFH4j6YcFZcQIKYfoVH3WsbzNR5lFwe6HsyfYITXGTBCfPoTU5Uo/pub?gid=839074683&single=true&output=csv';
+
+  // 読み込んだカードデータを格納する配列
+  let cards = []; 
+
+  // フィルターとソート後のカード一覧を格納
+  let filteredCards = [];
+
+  // 現在表示中のページ番号（0始まり）
+  let currentPage = 0;
+
+  // 1ページに表示するカード枚数（増やすと1回の読み込み量が増える）
+  const cardsPerPage = 120; 
+
+  /**
+   * ▼ CSVを取得してカードデータを読み込み・解析し表示処理へ
+   *  - エラー時は画面にメッセージ表示
+   *  - カードデータはCSVの各行をオブジェクト化して配列に保存
+   */
+  async function fetchCsvData() {
+    document.getElementById('cardList').textContent = '読み込み中.....'; // ローディング表示
+    try {
+      const response = await fetch(csvUrl);
+      const csvText = await response.text();
+      const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+      // 必要な項目のみ抽出して新しい配列に整形
+      cards = parsed.data.map(card => ({
+        "カード名 型番 レアリティ": card["カード名 型番 レアリティ"],
+        "募集枚数": card["募集枚数"],
+        "価格(要入力)": card["価格(要入力)"],
+        "画像URL": card["画像URL"]
+      }));
+      applyFilterSort(); // 読み込み後、フィルター＆ソートを適用して表示開始
+    } catch (error) {
+      console.error('CSV読み込みエラー:', error);
+      document.getElementById('cardList').textContent = 'データの読み込みに失敗しました。';
+    }
+  }
+
+  /**
+   * ▼ フィルターとソートの適用処理
+   *  - 検索ボックスの文字列でカード名や型番をフィルター
+   *  - ソート条件により価格順や名前順で並び替え
+   *  - ソート・フィルター後、1ページ目を表示
+   */
+  function applyFilterSort() {
+    const keyword = document.getElementById('searchInput').value.toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+
+    // キーワードに部分一致するカードだけ抽出
+    filteredCards = cards.filter(card =>
+      (card["カード名 型番 レアリティ"] || '').toLowerCase().includes(keyword) ||
+      (card["カード名"] || '').toLowerCase().includes(keyword) ||
+      (card["型番"] || '').toLowerCase().includes(keyword) ||
+      (card["パック名"] || '').toLowerCase().includes(keyword)
+    );
+
+    // ソート条件による並び替え
+    if (sort === 'price') {
+      filteredCards.sort((a, b) => parseInt(b["価格(要入力)"].replace(/[¥,\s]/g, '')) - parseInt(a["価格(要入力)"].replace(/[¥,\s]/g, '')));
+    } else if (sort === 'priceLow') {
+      filteredCards.sort((a, b) => parseInt(a["価格(要入力)"].replace(/[¥,\s]/g, '')) - parseInt(b["価格(要入力)"].replace(/[¥,\s]/g, '')));
+    } else if (sort === 'name') {
+      filteredCards.sort((a, b) => a["カード名 型番 レアリティ"].localeCompare(b["カード名 型番 レアリティ"]));
+    }
+
+    currentPage = 0;  // 表示は1ページ目に戻す
+    displayNextPage(); // カードの表示更新
+  }
+
+  /**
+   * ▼ 次のページ分のカードを表示する関数
+   *  - 現在のページ数に応じてカードの一部を切り出して表示
+   *  - 「もっと見る」ボタンの表示・非表示もここで切り替え
+   *  - 募集枚数が0の場合はグレイアウト表示に
+   */
+  function displayNextPage() {
+    const start = currentPage * cardsPerPage;
+    const end = start + cardsPerPage;
+    const cardsToShow = filteredCards.slice(start, end);
+
+    // 1ページ目なら表示をクリアしてから描画
+    if (currentPage === 0) {
+      document.getElementById('cardList').innerHTML = ''; 
+    }
+
+    cardsToShow.forEach(card => {
+      // 価格を数値化してカンマ区切りに変換
+      const rawPrice = card["価格(要入力)"] || '0';
+      const priceNumber = Number(rawPrice.replace(/[¥,\s]/g, '')) || 0;
+      const priceFormatted = priceNumber.toLocaleString();
+
+      // 募集枚数が0ならグレイアウトクラスを付ける
+      const isZero = (card["募集枚数"] || "").includes("0枚");
+      const grayClass = isZero ? 'gray-out' : '';
+
+      // カードHTMLを追加
+      document.getElementById('cardList').innerHTML += `
+        <div class="card ${grayClass}">
+          <img src="${card.画像URL}" alt="${card["カード名 型番 レアリティ"]}" loading="lazy" />
+          <div class="card-name">${card["カード名 型番 レアリティ"]}</div>
+          <div class="card-texts">
+            <div class="card-quantity">募集枚数: ${card["募集枚数"] || '-'}</div>
+            <div class="card-note">※募集枚数が0枚でも購入できる場合あり</div>
+          </div>
+          <div class="card-price">¥${priceFormatted}</div>
+        </div>
+      `;
+    });
+
+    currentPage++;  // 次ページ用にカウンタ増加
+
+    // すべて表示したら「もっと見る」ボタンを隠す
+    document.getElementById('loadMoreButton').style.display = (end >= filteredCards.length) ? 'none' : 'block';
+  }
+
+  // 「もっと見る」ボタン押下で次ページ表示を呼ぶ
+  document.getElementById('loadMoreButton').addEventListener('click', displayNextPage);
+
+  // リセットボタン押下で検索・ソートを初期状態に戻して再表示
+  document.getElementById('resetButton').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('sortSelect').value = 'price';
+    applyFilterSort();
+  });
+
+  // 入力や選択変更時に再度フィルター＆ソート実行
+  document.getElementById('searchInput').addEventListener('input', applyFilterSort);
+  document.getElementById('sortSelect').addEventListener('change', applyFilterSort);
+
+  // ページ読み込み時にデータ取得開始
+  fetchCsvData();
+</script>
+
+
+</body>
+</html>
